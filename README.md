@@ -3,4 +3,4 @@ This repository contains some C execises solved as part of the course [Software 
 
 This repository contains exercises from different sources:
 - The ones in "/The C Book/" are taken from [The C Book](http://publications.gbdirect.co.uk/c_book/)
-- The ones in "/Web" are taken from various sources on the Internet. For each exercise a .md file refers to the original source and reports the text.
+- The ones in "/Web" are taken from various sources on the Internet. For each exercise a .md file refers to the original source.
