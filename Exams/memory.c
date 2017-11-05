@@ -3,24 +3,30 @@
 
 struct node {
     size_t size;
-    short is_allocated;
     struct node *prev, *next;
     void* begin;
 };
 
 static void *workarea;
 static size_t spot = 1024;
-static struct node* chunks;
+static struct node* unallocated;
+static struct node* allocated;
+
+void reduce_free_chunk(struct node* chunk, size_t size) {
+    // remember to update allocated if the chunk is the first
+}
 
 void* my_malloc(size_t size) {
     if (size + sizeof(struct node) < spot) {
         short found = 0;
-        while (chunks && !found) {
-            if (!chunks -> is_allocated && chunks -> size >= size) { // found an eligible chunk
+        struct chunk = unallocated;
+        while (chunk && !found) {
+            if (!chunk -> is_allocated && chunk -> size >= size) { // found an eligible chunk
                 found = 1;
                 spot -= size;
-                
+                reduce_free_chunk(chunk, size);
             }
+            chunk = chunk -> next;
         }
     } else {
         exit(1); // size is bigger than the available spot
@@ -29,14 +35,13 @@ void* my_malloc(size_t size) {
 
 int main() {
     workarea = malloc(1024);
-    chunks = (struct node*) workarea;
-    chunks -> size = spot - sizeof(struct node);
-    chunks -> is_allocated = 0;
-    chunks -> prev = chunks -> next = NULL;
-    chunks -> begin = chunks + sizeof(struct node) - sizeof(void*);
-    printf("%p\n", &chunks -> size);
-    printf("%p\n", &chunks -> prev);
-    printf("%p\n", &chunks -> next);
-    printf("%p\n", chunks -> begin);
+    unallocated = (struct node*) workarea;
+    unallocated -> size = spot - sizeof(struct node);
+    unallocated -> prev = unallocated -> next = NULL;
+    unallocated -> begin = unallocated + sizeof(struct node) - sizeof(void*);
+    printf("%p\n", &unallocated -> size);
+    printf("%p\n", &unallocated -> prev);
+    printf("%p\n", &unallocated -> next);
+    printf("%p\n", unallocated -> begin);
     return 0;
 }
