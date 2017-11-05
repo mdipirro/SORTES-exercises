@@ -50,6 +50,11 @@ enum bool gt50(struct my_data data) {
     return (*(int*)data.data > 50) ? TRUE : FALSE;
 }
 
+enum bool only_lowercase_chars(struct my_data data) {
+    char c = *(char*)data.data;
+    return (c >= 97 && c <= 122) ? TRUE : FALSE;
+}
+
 void print(struct f_elem* list) {
     if (!list) {
         printf("\n");
@@ -71,5 +76,15 @@ int main() {
     data.data = info2;
     *info2 = 1000; printf("Trying to insert 1000: %d\n", f_list_insert(list, data));
     print(list -> head);
+    
+    struct f_list* list1 = f_list_init(&only_lowercase_chars);
+    char *info3 = (char*)malloc(sizeof(char)), *info4 = (char*)malloc(sizeof(char));
+    *info3 = 90; data.data = info3;
+    printf("Trying to insert 90: %d\n", f_list_insert(list1, data));
+    *info3 = 130; printf("Trying to insert 130: %d\n", f_list_insert(list1, data));
+    *info3 = 'g'; printf("Trying to insert g: %d\n", f_list_insert(list1, data));
+    data.data = info4;
+    *info4 = 'z'; printf("Trying to insert z: %d\n", f_list_insert(list1, data));
+    print(list1 -> head);
     return 0;
 }
