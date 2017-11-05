@@ -46,7 +46,30 @@ enum bool f_list_insert(struct f_list* list, struct my_data data) {
     return TRUE;
 }
 
-int main() {
+enum bool gt50(struct my_data data) {
+    return (*(int*)data.data > 50) ? TRUE : FALSE;
+}
 
+void print(struct f_elem* list) {
+    if (!list) {
+        printf("\n");
+    } else {
+        printf("%d ", *(int*)list -> info -> data);
+        print(list -> next);
+    }
+}
+
+int main() {
+    struct f_list* list = f_list_init(&gt50);
+    int *info = (int*)malloc(sizeof(int)), *info2 = (int*)malloc(sizeof(int));
+    *info = 10;
+    struct my_data data; data.data = info;
+    printf("Trying to insert 10: %d\n", f_list_insert(list, data));
+    *info = 30; printf("Trying to insert 30: %d\n", f_list_insert(list, data));
+    *info = 50; printf("Trying to insert 50: %d\n", f_list_insert(list, data));
+    *info = 70; printf("Trying to insert 70: %d\n", f_list_insert(list, data));
+    data.data = info2;
+    *info2 = 1000; printf("Trying to insert 1000: %d\n", f_list_insert(list, data));
+    print(list -> head);
     return 0;
 }
