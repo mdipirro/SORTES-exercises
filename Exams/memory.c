@@ -12,8 +12,34 @@ static size_t spot = 1024;
 static struct node* unallocated;
 static struct node* allocated;
 
+void insert_respecting_address(struct node** list, struct node* chunk) {
+    struct node* node = *list;
+    if (node) {
+        while (node -> begin < chunk -> begin) {
+            node = node -> next;
+        }
+        chunk -> next = node;
+        if (node -> prev) {
+            node -> prev -> next = chunk;
+        } else {
+            *list = chunk;
+        }
+    }
+}
+
 void reduce_free_chunk(struct node* chunk, size_t size) {
-    // remember to update allocated if the chunk is the first
+    // TODO chunk == unallocated
+    if (size == chunk -> size) { // exact fit
+        if (chunk == unallocated) {
+            unallocated = chunk -> next; // update unallocated's head
+        } else {
+            chunk -> prev -> next = chunk -> next; // extract the chunk
+        }
+        // insert the allocated chunk in the propoer list
+        insert_respecting_addresses(&allocated, chunk); 
+    } else {
+        // manage the case without exact fit
+    }
 }
 
 void* my_malloc(size_t size) {
