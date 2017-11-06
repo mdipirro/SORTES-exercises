@@ -13,6 +13,13 @@ static int spot;
 static struct node* unallocated;
 static struct node* allocated;
 
+void allocate_respecting_addresses(struct node*);
+int reduce_free_chunk(struct node*, size_t);
+void* my_malloc(size_t);
+void free_respecting_addresses(struct node*);
+int find_busy_chunk(struct node*);
+void my_free(void*);
+
 /**
  * Add a new chunk in the `allocated` list. The insertion respects
  * the address ordering.
