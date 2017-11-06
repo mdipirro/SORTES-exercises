@@ -1,73 +1,123 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define TOTAL_SIZE 1024
+
 struct node {
     size_t size;
     struct node *prev, *next;
-    void* begin;
 };
 
 static void *workarea;
-static size_t spot = 1024;
+static size_t spot;
 static struct node* unallocated;
 static struct node* allocated;
 
-void insert_respecting_address(struct node** list, struct node* chunk) {
-    struct node* node = *list;
+void insert_respecting_addresses(struct node** list, struct node* chunk) {
+    struct node *node = *list, *prev = NULL;
     if (node) {
-        while (node -> begin < chunk -> begin) {
+        while (node && node < chunk) {
+            prev = node;
             node = node -> next;
         }
-        chunk -> next = node;
-        if (node -> prev) {
-            node -> prev -> next = chunk;
+        if (node) {
+            chunk -> next = node;
+            chunk -> prev = node -> prev;
+            if (node -> prev) { // insert chunk
+                node -> prev -> next = chunk;
+            } else { // update head
+                *list = chunk;
+            }
+            node -> prev = chunk;
         } else {
-            *list = chunk;
+            prev -> next = chunk;
+            chunk -> prev = prev;
         }
+    } else { // empty list
+        *list = chunk; // new head
     }
 }
 
 void reduce_free_chunk(struct node* chunk, size_t size) {
-    // TODO chunk == unallocated
     if (size == chunk -> size) { // exact fit
+        spot -= size;
         if (chunk == unallocated) {
             unallocated = chunk -> next; // update unallocated's head
         } else {
             chunk -> prev -> next = chunk -> next; // extract the chunk
         }
-        // insert the allocated chunk in the propoer list
+        // insert the allocated chunk in the proper list
         insert_respecting_addresses(&allocated, chunk); 
     } else {
-        // manage the case without exact fit
+        spot = spot - size - sizeof(struct node);
+        // begin of the next free chunk
+        struct node* free = (struct node*) chunk + sizeof(struct node) + size;
+        // update the new size subtracting the new metadata's size
+        free -> size = chunk -> size - size - sizeof(struct node);
+        // link the new free chunk with the unallocated list
+        free -> prev = chunk -> prev;
+        free -> next = chunk -> next;
+        //free -> begin = free + sizeof(struct node) - sizeof(void*);
+        if (chunk -> prev) {
+            chunk -> prev -> next = free;
+        } else {
+            unallocated = free;
+        }
+        if (chunk -> next) {
+            chunk -> next -> prev = free;
+        }
+        // reduce chunk's size and manage its pointers
+        chunk -> size = size;
+        //printf("%ld ", chunk -> size);
+        insert_respecting_addresses(&allocated, chunk); 
     }
 }
 
 void* my_malloc(size_t size) {
-    if (size + sizeof(struct node) < spot) {
-        short found = 0;
-        struct chunk = unallocated;
-        while (chunk && !found) {
-            if (!chunk -> is_allocated && chunk -> size >= size) { // found an eligible chunk
-                found = 1;
-                spot -= size;
-                reduce_free_chunk(chunk, size);
-            }
+    short found = 0;
+    struct node* chunk = unallocated;
+    while (chunk && !found) {
+        found = chunk -> size >= size; // found an eligible chunk
+        if (!found) {
             chunk = chunk -> next;
         }
-    } else {
-        exit(1); // size is bigger than the available spot
     }
+    if (found) {
+        reduce_free_chunk(chunk, size);
+    }
+    return (chunk) ? chunk + sizeof(struct node) : NULL;
 }
 
 int main() {
     workarea = malloc(1024);
+    spot = TOTAL_SIZE - sizeof(struct node);
     unallocated = (struct node*) workarea;
     unallocated -> size = spot - sizeof(struct node);
     unallocated -> prev = unallocated -> next = NULL;
-    unallocated -> begin = unallocated + sizeof(struct node) - sizeof(void*);
-    printf("%p\n", &unallocated -> size);
+    allocated = NULL;
+
+    printf("BEGINNING:\n");
+    printf("workarea = %p\tunallocated = %p\tallocated = %p\n", workarea, unallocated, allocated);
+    
+    printf("\nAllocate 100 bytes:\n"); int* p = my_malloc(100); *p = 10;
+    printf("User pointer should be %p: %p\n", allocated + sizeof(struct node), p);
+    printf("User provided value should be 10: %d\n", *p);
+    printf("workarea = %p\tunallocated = %p\tallocated = %p\n", workarea, unallocated, allocated);
+
+    printf("\nAllocate 1200 bytes:\n");
+    printf("User pointer should be NIL: %p\n", my_malloc(1200));
+
+    printf("\nAllocate 50 bytes:\n"); char* q = my_malloc(50); *q = 'A';
+    printf("User pointer should be %p: %p\n", 
+        allocated + sizeof(struct node) * 2 + 100, q);
+    printf("User provided value should be A: %c\n", *q);
+    printf("workarea = %p\tunallocated = %p\tallocated = %p\n", workarea, unallocated, allocated);
+
+
+
+    /*printf("%p\n", &unallocated -> size);
     printf("%p\n", &unallocated -> prev);
     printf("%p\n", &unallocated -> next);
-    printf("%p\n", unallocated -> begin);
+    //printf("%p\n", unallocated -> begin);*/
     return 0;
 }
