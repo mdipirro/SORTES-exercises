@@ -9,7 +9,6 @@ struct node {
 };
 
 static void *workarea;
-static size_t spot;
 static struct node* unallocated;
 static struct node* allocated;
 
@@ -40,7 +39,6 @@ void insert_respecting_addresses(struct node** list, struct node* chunk) {
 
 void reduce_free_chunk(struct node* chunk, size_t size) {
     if (size == chunk -> size) { // exact fit
-        spot -= size;
         if (chunk == unallocated) {
             unallocated = chunk -> next; // update unallocated's head
         } else {
@@ -49,7 +47,6 @@ void reduce_free_chunk(struct node* chunk, size_t size) {
         // insert the allocated chunk in the proper list
         insert_respecting_addresses(&allocated, chunk); 
     } else {
-        spot = spot - size - sizeof(struct node);
         // begin of the next free chunk
         struct node* free = (struct node*) chunk + sizeof(struct node) + size;
         // update the new size subtracting the new metadata's size
@@ -57,7 +54,6 @@ void reduce_free_chunk(struct node* chunk, size_t size) {
         // link the new free chunk with the unallocated list
         free -> prev = chunk -> prev;
         free -> next = chunk -> next;
-        //free -> begin = free + sizeof(struct node) - sizeof(void*);
         if (chunk -> prev) {
             chunk -> prev -> next = free;
         } else {
@@ -68,7 +64,6 @@ void reduce_free_chunk(struct node* chunk, size_t size) {
         }
         // reduce chunk's size and manage its pointers
         chunk -> size = size;
-        //printf("%ld ", chunk -> size);
         insert_respecting_addresses(&allocated, chunk); 
     }
 }
@@ -88,11 +83,14 @@ void* my_malloc(size_t size) {
     return (chunk) ? chunk + sizeof(struct node) : NULL;
 }
 
+void free(void* ptr) {
+    //spot 
+}
+
 int main() {
     workarea = malloc(1024);
-    spot = TOTAL_SIZE - sizeof(struct node);
     unallocated = (struct node*) workarea;
-    unallocated -> size = spot - sizeof(struct node);
+    unallocated -> size = TOTAL_SIZE - sizeof(struct node);
     unallocated -> prev = unallocated -> next = NULL;
     allocated = NULL;
 
