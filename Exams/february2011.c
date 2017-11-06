@@ -1,84 +1,85 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct tnode {
-    int serial_number;
-    struct tnode *children;
+struct node {
+    int info;
+    struct node* children;
     int children_number;
 };
 
-struct lnode* new_lnode(int serial, struct lnode* next) {
-    struct lnode* node = (struct lnode*) malloc(sizeof(struct lnode));
-    node -> serial_number = serial;
-    node -> next = next;
-}
-
-struct tnode* new_tnode(int serial) {
-    struct tnode* node = (struct tnode*) malloc(sizeof(struct tnode));
-    node -> serial_number = serial;
-    node -> children = (struct tnode*) malloc(sizeof(struct tnode[10]));
+struct node* new_node(int info) {
+    struct node* node = (struct node*) malloc(sizeof(struct node));
+    node -> info = info;
+    node -> children = (struct node*) malloc(sizeof(struct node[10]));
     node -> children_number = 0;
 }
 
-struct tnode* get_child_by_number(struct tnode* node, int number) {
-    struct tnode* result = NULL;
-    int i = 0;
-    while (!result && i < node -> children_number) {
-        if (node -> children[i].serial_number % 10 == number) {
-            result = &node -> children[i];
+void add_child (struct node* parent, struct node* child) {
+    parent -> children[parent -> children_number++] = *child;
+}
+
+struct node* get_child_by_info(struct node* root, int info) {
+    struct node* result = NULL;
+    for (int i = 0; root && i < root -> children_number && !result; i++) {
+        if (root -> children[i].info % 10 == info) {
+            result = &root -> children[i];
         }
-        i++;
     }
     return result;
 }
 
-void add_child(struct tnode* node, struct tnode* child) {
-    node -> children[node -> children_number++] = *child;
-}
-
-void int2string(int number, char* string, int length) {
-    for (int i = length -1; i >= 0; i--) {
-        string[i] = number % 10;
-        number /= 10;
+int insert(struct node** root, int info) {
+    if (!*root && !info) {
+        *root = new_node(info);
+        return 0;
     }
-}
-
-// PRE 0 has already been added -> root points to a valid node
-int insert(struct tnode* root, int value) {
-    struct tnode* prev = NULL;
-    int d = 0, copy = value, i = 0, status = 2; // 2 means scanning;
-
-    do {d++;}while(copy /= 10);
-    char digits[d];
-    int2string(value, digits, d);
-
-    while (status == 2 && i < d) {
-        prev = root;
-        root = get_child_by_number(root, digits[i]);
-        //printf("%d ", )
-        // check the new pointer
-        if (!root) {
-            if (i + 2 < d) { // +2 because: +1 -> i starts from 0; +1 -> one digit to add
-                status = -1; // more levels are needed
-            } else {
-                status = 0;
-                add_child(prev, new_tnode(value));
-            }
-        }
-        i++;
+    if (!*root && info) {
+        return -1; // no root and value != 0
     }
-    return (status != 2) ? status : -2;
+
+    // get every digit of the number
+    int digits = 0, n = info;
+    do {
+        digits++;
+    } while (n /= 10);
+    char number[digits]; n = info;
+    for (int i = digits - 1; i >= 0; i--) {
+        number[i] = n % 10;
+        n /= 10;
+    }
+
+    struct node *node = *root, *prev = NULL;
+    int d = 0;
+    while (node && d < digits) {
+        prev = node;
+        node = get_child_by_info(node, number[d]);
+        d++;
+    }
+    printf("%d ", d);
+    if (d + 1 <= digits) { // missing nodes
+        return -1;
+    }
+
+    if (node) { // found a node with the same info
+        return -1;
+    }
+    
+    add_child(prev, new_node(info));
+    return 0;
 }
 
 int main() {
-    struct tnode* root = new_tnode(0);
-    printf("Adding 5: %d\n", insert(root, 5));
-    printf("Adding 1: %d\n", insert(root, 1));
-    printf("Adding 2: %d\n", insert(root, 2));
-    printf("Adding 12: %d\n", insert(root, 12));
-    printf("Adding 16: %d\n", insert(root, 16));
-    printf("Adding 13: %d\n", insert(root, 13));
-    printf("Adding 135: %d\n", insert(root, 135));
-    printf("Adding 243: %d\n", insert(root, 243));
-    printf("Adding 16: %d\n", insert(root, 16));
+    struct node* root = NULL;
+    printf("Adding 5: %d\n", insert(&root, 5));
+    printf("Adding 0 %d\n", insert(&root, 0));
+    printf("Adding 5: %d\n", insert(&root, 5));
+    printf("Adding 1: %d\n", insert(&root, 1));
+    printf("Adding 2: %d\n", insert(&root, 2));
+    printf("Adding 12: %d\n", insert(&root, 12));
+    printf("Adding 16: %d\n", insert(&root, 16));
+    printf("Adding 13: %d\n", insert(&root, 13));
+    printf("Adding 135: %d\n", insert(&root, 135));
+    printf("Adding 243: %d\n", insert(&root, 243));
+    printf("Adding 599: %d\n", insert(&root, 599));
+    printf("Adding 16: %d\n", insert(&root, 16));
 }
