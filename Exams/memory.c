@@ -93,7 +93,7 @@ void* my_malloc(size_t size) {
 
 void free_respecting_addresses(struct node* chunk) {
     struct node *node = unallocated, *prev = NULL;
-    short left_merged = 0;
+    short left_merged = 0, right_merged = 0;
     if (node) {
         while (node && node < chunk) {
             prev = node;
@@ -111,12 +111,19 @@ void free_respecting_addresses(struct node* chunk) {
                 if (node -> next) { // successor in the list
                     node -> next -> prev = chunk;
                 }
-            } else if (prev + sizeof(struct node) + prev -> size == chunk) {
+                right_merged = 1;
+            } 
+            if (prev && prev + sizeof(struct node) + prev -> size == chunk) {
                 spot += sizeof(struct node);
                 // chunk and prev next to each other
                 prev -> size += chunk -> size + sizeof(struct node);
+                prev -> next = NULL;
+                chunk -> next = NULL;
+                chunk -> prev = NULL;
                 left_merged = 1;
-            } else { // chunk and node not mergeable
+            } 
+
+            if (!left_merged && !right_merged) { // chunk and node not mergeable
                 chunk -> next = node;
                 node -> prev = chunk;
             }
@@ -133,6 +140,8 @@ void free_respecting_addresses(struct node* chunk) {
             if (prev + sizeof(struct node) + prev -> size == chunk) {
                 // chunk and prev next to each other
                 prev -> size += chunk -> size + sizeof(struct node);
+                chunk -> next = NULL;
+                chunk -> prev = NULL;
             } else {
                 prev -> next = chunk;
                 chunk -> prev = prev;
@@ -145,11 +154,11 @@ void free_respecting_addresses(struct node* chunk) {
     }
 }
 
-int find_free_chunk(struct node* chunk) {
+int find_busy_chunk(struct node* chunk) {
     if (!unallocated) {
         return 0;
     }
-    struct node* node = unallocated;
+    struct node* node = allocated;
     short found = 0;
     while (node && !found) {
         found = node == chunk;
@@ -158,9 +167,9 @@ int find_free_chunk(struct node* chunk) {
     return found;
 }
 
-void free(void* ptr) {
+void my_free(void* ptr) {
     struct node* chunk = ((struct node*)ptr - sizeof(struct node)); // get the corresponding chunk
-    if (find_free_chunk(chunk)) {
+    if (find_busy_chunk(chunk)) {
         spot += chunk -> size;
         // extract chunk from allocated list
         if (!chunk -> prev) {
@@ -202,8 +211,23 @@ int main() {
     printf("Allocated size should be 50: %ld\n", ((struct node*)q - sizeof(struct node)) -> size);
     printf("workarea = %p\tunallocated = %p\tallocated = %p\n", workarea, unallocated, allocated);
 
-    free(q);
+    printf("\nAllocate 75 bytes:\n"); double* s = my_malloc(75); *s = 3.1;
+    printf("User pointer should be %p: %p\n", 
+        allocated + sizeof(struct node) * 3 + 100 + 50, s);
+    printf("User provided value should be 3.1: %e\n", *(double*)(allocated -> next -> next + 24));
+    printf("Allocated size should be 75: %ld\n", ((struct node*)s - sizeof(struct node)) -> size);
+    printf("workarea = %p\tunallocated = %p\tallocated = %p\n", workarea, unallocated, allocated);
+
+    struct node* tmp = unallocated;
+    my_free(q);
     printf("\nFree q:\n");
+    printf("allocated -> next should be %p: %p\n", ((struct node*)s - sizeof(struct node)), allocated -> next);
+    printf("unallocated -> next should be %p: %p\n", tmp, unallocated -> next);
+    printf("unallocated should be %p: %p\n", (struct node*)q - sizeof(struct node), unallocated);
+    printf("Chunk's size should be 50: %ld\n", unallocated -> size);
+
+    my_free(s);
+    printf("\nFree s:\n");
     printf("allocated -> next should be NIL: %p\n", allocated -> next);
     printf("unallocated -> next should be NIL: %p\n", unallocated -> next);
     printf("unallocated should be %p: %p\n", (struct node*)q - sizeof(struct node), unallocated);
