@@ -6,3 +6,4 @@ This repository contains exercises from different sources:
 - The ones in "Web/" are taken from various sources on the Internet. For each exercise a .md file refers to the original source.
 - The ones in "Others/" are exercises I thought about.
 - The ones in "Exams/" are taken from previous SORTES exams.
+- The ones in "MikroTik/" are programs for a Printed circuit board (PCB) with a 18F97J60 Microchip controller. The board is OLIMEX PIC MaxiWeb.
